@@ -1,0 +1,18 @@
+{
+  "time": 1437522387,
+  "host": "dataserver992.example.com",
+  "source": "testapp",
+  "event": {
+    "message": "Something happened",
+    "severity": "INFO"
+  }
+}
+{
+  "event":"event 1",
+  "time": 1447828325
+}
+{
+  "event":"event 2",
+  "time": 1447828326
+}
+{"event":"hello world"}
