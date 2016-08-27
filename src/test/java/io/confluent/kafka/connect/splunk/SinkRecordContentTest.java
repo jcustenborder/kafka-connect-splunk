@@ -1,12 +1,12 @@
 /**
  * Copyright (C) ${project.inceptionYear} Jeremy Custenborder (jcustenborder@gmail.com)
- *
+ * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
- *         http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -15,6 +15,7 @@
  */
 package io.confluent.kafka.connect.splunk;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableMap;
 import org.apache.kafka.connect.data.Struct;
 import org.apache.kafka.connect.sink.SinkRecord;
@@ -48,7 +49,6 @@ public class SinkRecordContentTest {
             1L
         )
     );
-
   }
 
   @Test
@@ -58,7 +58,9 @@ public class SinkRecordContentTest {
     addRecord(sinkRecords, ImmutableMap.of("host", "hostname.example.com", "time", new Date(1472256858924L), "source", "testapp"));
     addRecord(sinkRecords, ImmutableMap.of("host", "hostname.example.com", "time", new Date(1472256858924L), "source", "testapp", "sourcetype", "txt", "index", "main"));
 
-    SinkRecordContent content = new SinkRecordContent(sinkRecords);
+    ObjectMapper mapper = new ObjectMapper();
+
+    SinkRecordContent content = new SinkRecordContent(mapper, sinkRecords);
 
     String actual;
     try (ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {

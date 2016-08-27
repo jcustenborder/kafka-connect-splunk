@@ -1,12 +1,12 @@
 /**
  * Copyright (C) ${project.inceptionYear} Jeremy Custenborder (jcustenborder@gmail.com)
- *
+ * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
- *         http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -15,6 +15,8 @@
  */
 package io.confluent.kafka.connect.splunk;
 
+import com.fasterxml.jackson.core.JsonGenerator;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.api.client.http.GenericUrl;
 import com.google.api.client.http.HttpRequest;
 import com.google.api.client.http.HttpRequestFactory;
@@ -33,6 +35,7 @@ import org.apache.kafka.connect.sink.SinkTask;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.ByteArrayOutputStream;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.security.GeneralSecurityException;
@@ -46,6 +49,7 @@ public class SplunkHttpSinkTask extends SinkTask {
   JsonFactory jsonFactory = new JacksonFactory();
   HttpRequestFactory httpRequestFactory;
   GenericUrl eventCollectorUrl;
+  ObjectMapper mapper;
 
   @Override
   public String version() {
@@ -110,17 +114,42 @@ public class SplunkHttpSinkTask extends SinkTask {
     if (log.isInfoEnabled()) {
       log.info("Setting Splunk Http Event Collector Url to {}", this.eventCollectorUrl);
     }
+
+    this.mapper = new ObjectMapper();
+    this.mapper.configure(JsonGenerator.Feature.AUTO_CLOSE_TARGET, false);
   }
 
 
   @Override
   public void put(Collection<SinkRecord> collection) {
+    if (collection.isEmpty()) {
+      if (log.isDebugEnabled()) {
+        log.debug("No records in collection.");
+      }
+      return;
+    }
+
     try {
       if (log.isDebugEnabled()) {
         log.debug("Posting {} message(s) to {}", collection.size(), this.eventCollectorUrl);
       }
 
-      HttpRequest httpRequest = this.httpRequestFactory.buildPostRequest(this.eventCollectorUrl, new SinkRecordContent(collection));
+      SinkRecordContent sinkRecordContent = new SinkRecordContent(this.mapper, collection);
+
+      if (log.isDebugEnabled()) {
+        try (ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
+          sinkRecordContent.writeTo(outputStream);
+          outputStream.flush();
+          byte[] buffer = outputStream.toByteArray();
+          log.debug("Posting\n{}", new String(buffer, "UTF-8"));
+        } catch (IOException ex) {
+          if (log.isDebugEnabled()) {
+            log.debug("exception thrown while previewing post", ex);
+          }
+        }
+      }
+
+      HttpRequest httpRequest = this.httpRequestFactory.buildPostRequest(this.eventCollectorUrl, sinkRecordContent);
       HttpResponse httpResponse = httpRequest.execute();
       SplunkStatusMessage statusMessage = httpResponse.parseAs(SplunkStatusMessage.class);
 
@@ -146,5 +175,4 @@ public class SplunkHttpSinkTask extends SinkTask {
       log.info("Stopping...");
     }
   }
-
 }

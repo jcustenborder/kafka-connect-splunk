@@ -17,6 +17,14 @@
 
 mvn clean package
 
+if [ $? -eq 0 ]
+then
+    echo "maven finished"
+else
+    echo "Maven failed"
+    exit 1
+fi
+
 export CLASSPATH="$(find `pwd`/target/kafka-connect-salesforce-1.0-SNAPSHOT-package/share/java/ -type f -name '*.jar' | tr '\n' ':')"
 export KAFKA_JMX_OPTS='-Xdebug -agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=5005'
 

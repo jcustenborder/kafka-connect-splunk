@@ -46,10 +46,7 @@ services:
     image: outcoldman/splunk:latest
     environment:
       SPLUNK_START_ARGS: --accept-license --answer-yes --no-prompt
-      SPLUNK_CMD_1: http-event-collector enable -name myapp -uri https://localhost:8089 -auth admin:changeme
-    volumes:
-      - docker/splunk/config:/opt/splunk/etc
-      - docker/splunk/data:/opt/splunk/var
+      SPLUNK_CMD_1: http-event-collector create -auth admin:changeme -uri https://localhost:8089 -name myapp
     ports:
       - 8000:8000
       - 8088:8088
