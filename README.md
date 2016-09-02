@@ -3,7 +3,37 @@ This connector support receiving data and writing data to Splunk.
 
 # Source Connector
 
-This is under development.
+The Splunk Source connector allows emulates a [Splunk Http Event Collector](http://dev.splunk.com/view/event-collector/SP-CAAAE6M) to allow
+application that normally log to Splunk to instead write to Kafka. The goal of this plugin is to make the change nearly
+transparent to the user. This plugin currently has support for [X-Forwarded-For](https://en.wikipedia.org/wiki/X-Forwarded-For) so
+it will sit behind a load balancer nicely. 
+
+## Configuration
+
+| Name                             | Description                                                                                                                                                                                                                                                                                                 | Type     | Default                   | Valid Values | Importance |
+|----------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|----------|---------------------------|--------------|------------|
+| kafka.topic                      | This value contains the topic that the messages will be written to. If topic per index is enabled this will be the prefix for the topic. If not this will be the exact topic.                                                                                                                               | string   |                           |              | high       |
+| splunk.collector.index.default   | The index that will be used if no index is specified in the event message.                                                                                                                                                                                                                                  | string   |                           |              | high       |
+| splunk.ssl.key.store.password    | The password for opening the keystore.                                                                                                                                                                                                                                                                      | password |                           |              | high       |
+| splunk.ssl.key.store.path        | The path to the keystore on the local filesystem.                                                                                                                                                                                                                                                           | string   |                           |              | high       |
+| splunk.port                      | The port to configure the http listener on.                                                                                                                                                                                                                                                                 | int      | 8088                      |              | high       |
+| topic.per.index                  | Flag determines if the all generated messages should be written toa single topic or should the messages be placed in a topic prefixed by the supplied index. If true the `kafka.topic` setting will be concatenated along with the index name. If false the `kafka.topic` value will be used for the topic. | boolean  | false                     |              | medium     |
+| backoff.ms                       | The number of milliseconds to back off when there are no records in thequeue.                                                                                                                                                                                                                               | int      | 100                       |              | low        |
+| batch.size                       | Maximum number of records to write per poll call.                                                                                                                                                                                                                                                           | int      | 10000                     |              | low        |
+| splunk.collector.index.allowed   | The indexes this connector allows data to be written for. Specifying an index outside of this list will result in an exception being raised.                                                                                                                                                                | list     | []                        |              | low        |
+| splunk.collector.url             | Path fragement the servlet should respond on                                                                                                                                                                                                                                                                | string   | /services/collector/event |              | low        |
+| splunk.ssl.renegotiation.allowed | Flag to determine if ssl renegotiation is allowed.                                                                                                                                                                                                                                                          | boolean  | true                      |              | low        |
+
+### Example Config
+
+```
+name=splunk-http-source
+tasks.max=1
+connector.class=io.confluent.kafka.connect.splunk.SplunkHttpSourceConnector
+splunk.ssl.key.store.path=/etc/security/keystore.jks
+splunk.ssl.key.store.password=password
+splunk.collector.index.default=main
+```
 
 # Sink Connector
 
@@ -52,7 +82,7 @@ Here is an example of an event generated by [Kafka Connect Syslog](https://githu
 
 ```
 {
-  "host": "vpn.custenborder.com",
+  "host": "vpn.example.com",
   "time": 1472342182,
   "event": {
     "charset": "UTF-8",

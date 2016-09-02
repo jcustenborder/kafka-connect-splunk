@@ -1,11 +1,11 @@
 /**
- * Copyright (C) ${project.inceptionYear} Jeremy Custenborder (jcustenborder@gmail.com)
+ * Copyright © 2016 Jeremy Custenborder (jcustenborder@gmail.com)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *         http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -15,22 +15,35 @@
  */
 package io.confluent.kafka.connect.splunk;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.collect.ImmutableMap;
 import org.apache.kafka.common.utils.Time;
+import org.apache.kafka.connect.connector.ConnectRecord;
 import org.apache.kafka.connect.data.Struct;
 import org.apache.kafka.connect.source.SourceRecord;
-import org.junit.Assert;
+import org.hamcrest.core.IsEqual;
+import org.junit.Before;
 import org.junit.Test;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Date;
+import java.util.LinkedHashMap;
+import java.util.Map;
 
+import static org.junit.Assert.*;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 public class EventConverterTest {
+
+  final String TOPIC_PREFIX_CONF = "topic";
+
+  ObjectMapper mapper;
+  SplunkHttpSourceConnectorConfig config;
+  Map<String, String> settings;
 
   static JsonNode readNode(String fileName) throws IOException {
     ObjectMapper mapper = new ObjectMapper();
@@ -38,21 +51,107 @@ public class EventConverterTest {
     return mapper.readTree(inputStream);
   }
 
+  @Before
+  public void setup() {
+    this.mapper = ObjectMapperFactory.create();
+    this.settings = new LinkedHashMap<>();
+    this.settings.put(SplunkHttpSourceConnectorConfig.TOPIC_PREFIX_CONF, TOPIC_PREFIX_CONF);
+    this.settings.put(SplunkHttpSourceConnectorConfig.TOPIC_PER_INDEX_CONF, Boolean.FALSE.toString());
+    this.settings.put(SplunkHttpSourceConnectorConfig.KEYSTORE_PASSWORD_CONF, "password");
+    this.settings.put(SplunkHttpSourceConnectorConfig.KEYSTORE_PATH_CONF, "/tmp/foo");
+    this.settings.put(SplunkHttpSourceConnectorConfig.EVENT_COLLECTOR_INDEX_DEFAULT_CONF, "default");
+    this.config = new SplunkHttpSourceConnectorConfig(this.settings);
+  }
+
+  void assertSourceRecord(final Map<String, ?> expected, final ConnectRecord record, final String topic) throws JsonProcessingException {
+    assertNotNull("record should not be null.", record);
+    assertNotNull("record.value() should not be null.", record.value());
+    assertEquals("topic does not match.", topic, record.topic());
+    assertTrue("record.key() should be a struct", record.key() instanceof Struct);
+    assertTrue("record.value() should be a struct", record.value() instanceof Struct);
+
+    Struct keyStruct = (Struct) record.key();
+    keyStruct.validate();
+
+    Struct valueStruct = (Struct) record.value();
+    valueStruct.validate();
+
+    for (Map.Entry<String, ?> entry : expected.entrySet()) {
+      Object structValue = valueStruct.get(entry.getKey());
+
+      if (entry.getValue() instanceof Map) {
+        String text = this.mapper.writeValueAsString(entry.getValue());
+        String structText = (String) structValue;
+        assertThat(entry.getKey() + " should match.", structText, IsEqual.equalTo(text));
+      } else {
+        assertThat(entry.getKey() + " should match.", structValue, IsEqual.equalTo(entry.getValue()));
+      }
+    }
+  }
+
   @Test
-  public void convertMinimal() throws IOException {
-    JsonNode jsonNode = readNode("event.minimal.json");
-
+  public void StringBody() throws JsonProcessingException {
     final long TIME = 1472266250342L;
+    Map<String, ?> expected = ImmutableMap.of(
+        "time", new Date(TIME),
+        "host", "localhost",
+        "source", "datasource",
+        "sourcetype", "txt",
+        "event", "Hello world!"
+    );
 
-    EventConverter eventConverter = new EventConverter();
+    JsonNode jsonNode = this.mapper.convertValue(expected, JsonNode.class);
+    assertNotNull("jsonNode should not be null.", jsonNode);
+    assertTrue("jsonNode should be an object.", jsonNode.isObject());
+
+    EventConverter eventConverter = new EventConverter(mapper, config);
     eventConverter.time = mock(Time.class);
     when(eventConverter.time.milliseconds()).thenReturn(TIME);
-    SourceRecord sourceRecord = eventConverter.convert(jsonNode, "asdf");
-    Assert.assertNotNull("SourceRecord should not be null.", sourceRecord);
-    Assert.assertTrue("sourceRecord.value() should be a struct", sourceRecord.value() instanceof Struct);
-    Struct valueStruct = (Struct) sourceRecord.value();
+    SourceRecord sourceRecord = eventConverter.convert(jsonNode, "192.168.1.10");
+    assertSourceRecord(expected, sourceRecord, TOPIC_PREFIX_CONF);
+  }
 
-    Assert.assertEquals("time does not match.", new Date(TIME), valueStruct.get("time"));
+  @Test
+  public void complexBody() throws JsonProcessingException {
+    final long TIME = 1472266250342L;
+    Map<String, ?> expected = ImmutableMap.of(
+        "time", new Date(TIME),
+        "host", "dataserver992.example.com",
+        "source", "datasource",
+        "event", ImmutableMap.of(
+            "message", "Something happened",
+            "severity", "INFO"
+        )
+    );
+
+    JsonNode jsonNode = this.mapper.convertValue(expected, JsonNode.class);
+    assertNotNull("jsonNode should not be null.", jsonNode);
+    assertTrue("jsonNode should be an object.", jsonNode.isObject());
+
+    EventConverter eventConverter = new EventConverter(mapper, config);
+    eventConverter.time = mock(Time.class);
+    when(eventConverter.time.milliseconds()).thenReturn(TIME);
+    SourceRecord sourceRecord = eventConverter.convert(jsonNode, "192.168.1.10");
+    assertSourceRecord(expected, sourceRecord, TOPIC_PREFIX_CONF);
+  }
+
+  @Test
+  public void minimal() throws JsonProcessingException {
+    final long TIME = 1472266250342L;
+    Map<String, ?> expected = ImmutableMap.of(
+        "time", new Date(TIME),
+        "event", "Hello world!"
+    );
+
+    JsonNode jsonNode = this.mapper.convertValue(expected, JsonNode.class);
+    assertNotNull("jsonNode should not be null.", jsonNode);
+    assertTrue("jsonNode should be an object.", jsonNode.isObject());
+
+    EventConverter eventConverter = new EventConverter(mapper, config);
+    eventConverter.time = mock(Time.class);
+    when(eventConverter.time.milliseconds()).thenReturn(TIME);
+    SourceRecord sourceRecord = eventConverter.convert(jsonNode, "192.168.1.10");
+    assertSourceRecord(expected, sourceRecord, TOPIC_PREFIX_CONF);
   }
 
 }

@@ -1,11 +1,11 @@
 /**
- * Copyright (C) ${project.inceptionYear} Jeremy Custenborder (jcustenborder@gmail.com)
+ * Copyright © 2016 Jeremy Custenborder (jcustenborder@gmail.com)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *         http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -15,18 +15,27 @@
  */
 package io.confluent.kafka.connect.splunk;
 
-import com.google.inject.servlet.GuiceFilter;
+import com.fasterxml.jackson.core.JsonFactory;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import io.confluent.kafka.connect.utils.data.SourceRecordConcurrentLinkedDeque;
 import org.apache.kafka.connect.errors.ConnectException;
 import org.apache.kafka.connect.source.SourceRecord;
 import org.apache.kafka.connect.source.SourceTask;
+import org.eclipse.jetty.server.HttpConfiguration;
+import org.eclipse.jetty.server.HttpConnectionFactory;
+import org.eclipse.jetty.server.SecureRequestCustomizer;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.ServerConnector;
+import org.eclipse.jetty.server.SslConnectionFactory;
 import org.eclipse.jetty.servlet.DefaultServlet;
 import org.eclipse.jetty.servlet.ServletContextHandler;
+import org.eclipse.jetty.servlet.ServletHolder;
+import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.servlet.DispatcherType;
-import java.util.EnumSet;
+import javax.servlet.ServletException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -34,6 +43,8 @@ public class SplunkHttpSourceTask extends SourceTask {
   static final Logger log = LoggerFactory.getLogger(SplunkHttpSourceTask.class);
   SplunkHttpSourceConnectorConfig config;
   Server server;
+  EventServlet eventServlet;
+  SourceRecordConcurrentLinkedDeque sourceRecordConcurrentLinkedDeque;
 
   @Override
   public String version() {
@@ -43,27 +54,73 @@ public class SplunkHttpSourceTask extends SourceTask {
   @Override
   public void start(Map<String, String> map) {
     this.config = new SplunkHttpSourceConnectorConfig(map);
-    this.server = new Server(this.config.port());
+    this.server = new Server();
 
-    ServletContextHandler servletContextHandler = new ServletContextHandler(server, "/", ServletContextHandler.SESSIONS);
-    servletContextHandler.addFilter(GuiceFilter.class, "/*", EnumSet.allOf(DispatcherType.class));
+    HttpConfiguration httpsConfiguration = new HttpConfiguration();
+    httpsConfiguration.addCustomizer(new SecureRequestCustomizer());
+
+    SslContextFactory sslContextFactory = this.config.sslContextFactory();
+    ServerConnector sslConnector = new ServerConnector(
+        server,
+        new SslConnectionFactory(sslContextFactory, "http/1.1"),
+        new HttpConnectionFactory(httpsConfiguration)
+    );
+    sslConnector.setPort(this.config.port());
+
+    server.setConnectors(new ServerConnector[]{sslConnector});
+
+    if (log.isInfoEnabled()) {
+      log.info("Configuring Splunk Event Collector Servlet for {}", this.config.eventCollectorUrl());
+    }
+
+    ServletContextHandler servletContextHandler = new ServletContextHandler(server, "/", ServletContextHandler.NO_SESSIONS);
     servletContextHandler.addServlet(DefaultServlet.class, "/");
+    ServletHolder holder = servletContextHandler.addServlet(EventServlet.class, this.config.eventCollectorUrl());
+
+    this.sourceRecordConcurrentLinkedDeque = new SourceRecordConcurrentLinkedDeque(this.config.batchSize(), this.config.backoffMS());
 
     try {
+      if (log.isInfoEnabled()) {
+        log.info("Starting web server on port {}", this.config.port());
+      }
       server.start();
     } catch (Exception e) {
-      throw new ConnectException("Exception thrown while starting server", e);
+      throw new IllegalStateException("Exception thrown while starting server", e);
     }
+
+    try {
+      this.eventServlet = (EventServlet) holder.ensureInstance();
+    } catch (ServletException e) {
+      throw new ConnectException("This is really broken", e);
+    }
+
+    JsonFactory jsonFactory = new JsonFactory();
+    ObjectMapper objectMapper = ObjectMapperFactory.create();
+
+    this.eventServlet.configure(this.config, jsonFactory, objectMapper, this.sourceRecordConcurrentLinkedDeque);
   }
 
   @Override
   public List<SourceRecord> poll() throws InterruptedException {
-    //TODO: Create SourceRecord objects that will be sent the kafka cluster.
-    throw new UnsupportedOperationException("This has not been implemented.");
+    List<SourceRecord> records = new ArrayList<>(this.config.batchSize());
+
+    while (!this.sourceRecordConcurrentLinkedDeque.drain(records)) {
+      if (log.isDebugEnabled()) {
+        log.debug("No records received. Sleeping.");
+      }
+    }
+
+    return records;
   }
 
   @Override
   public void stop() {
-    //TODO: Do whatever is required to stop your task.
+    try {
+      this.server.stop();
+    } catch (Exception e) {
+      if (log.isErrorEnabled()) {
+        log.error("Exception thrown calling server.stop()", e);
+      }
+    }
   }
 }

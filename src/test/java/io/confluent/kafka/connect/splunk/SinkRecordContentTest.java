@@ -1,11 +1,11 @@
 /**
- * Copyright (C) ${project.inceptionYear} Jeremy Custenborder (jcustenborder@gmail.com)
+ * Copyright © 2016 Jeremy Custenborder (jcustenborder@gmail.com)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *         http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -32,7 +32,7 @@ import java.util.Map;
 public class SinkRecordContentTest {
 
 
-  void addRecord(Collection<SinkRecord> records, Map<String, ?> values) {
+  public static void addRecord(Collection<SinkRecord> records, Map<String, ?> values) {
     Struct valueStruct = new Struct(EventConverter.VALUE_SCHEMA);
     for (Map.Entry<String, ?> entry : values.entrySet()) {
       valueStruct.put(entry.getKey(), entry.getValue());
@@ -58,7 +58,7 @@ public class SinkRecordContentTest {
     addRecord(sinkRecords, ImmutableMap.of("host", "hostname.example.com", "time", new Date(1472256858924L), "source", "testapp"));
     addRecord(sinkRecords, ImmutableMap.of("host", "hostname.example.com", "time", new Date(1472256858924L), "source", "testapp", "sourcetype", "txt", "index", "main"));
 
-    ObjectMapper mapper = new ObjectMapper();
+    ObjectMapper mapper = ObjectMapperFactory.create();
 
     SinkRecordContent content = new SinkRecordContent(mapper, sinkRecords);
 

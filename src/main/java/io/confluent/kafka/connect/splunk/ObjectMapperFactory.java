@@ -15,30 +15,21 @@
  */
 package io.confluent.kafka.connect.splunk;
 
-import com.fasterxml.jackson.core.JsonFactory;
-import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.junit.Test;
+import com.fasterxml.jackson.databind.module.SimpleModule;
 
-import java.io.IOException;
-import java.io.InputStream;
+import java.util.Date;
 
-public class EventIteratorTest {
-  public static InputStream events() {
-    return EventIteratorTest.class.getResourceAsStream("events.json");
-  }
-
-  @Test
-  public void iterate() throws IOException {
+class ObjectMapperFactory {
+  public static ObjectMapper create() {
     ObjectMapper mapper = new ObjectMapper();
-    JsonFactory factory = new JsonFactory();
-    InputStream inputStream = events();
-    EventIterator iterator = EventIterator.create(mapper, factory, inputStream);
-
-    while (iterator.hasNext()) {
-      JsonNode jsonNode = iterator.next();
-      System.out.println(jsonNode.toString());
-    }
+    SimpleModule module = new SimpleModule();
+    module.addSerializer(Date.class, new DateSerializer());
+    module.addDeserializer(Date.class, new DateDeserializer());
+    mapper.registerModule(module);
+    mapper.configure(JsonGenerator.Feature.AUTO_CLOSE_TARGET, false);
+    mapper.configure(JsonGenerator.Feature.WRITE_BIGDECIMAL_AS_PLAIN, true);
+    return mapper;
   }
-
 }

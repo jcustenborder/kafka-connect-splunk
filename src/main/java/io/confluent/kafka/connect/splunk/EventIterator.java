@@ -1,11 +1,11 @@
 /**
- * Copyright (C) ${project.inceptionYear} Jeremy Custenborder (jcustenborder@gmail.com)
+ * Copyright © 2016 Jeremy Custenborder (jcustenborder@gmail.com)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *         http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -20,6 +20,7 @@ import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Iterator;
@@ -37,12 +38,20 @@ class EventIterator implements Iterator<JsonNode>, AutoCloseable {
     this.iterator = iterator;
   }
 
+  public static EventIterator create(ObjectMapper objectMapper, JsonFactory jsonFactory, BufferedReader bufferedReader) throws IOException {
+    JsonParser jsonParser = jsonFactory.createParser(bufferedReader);
+    return create(objectMapper, jsonFactory, jsonParser);
+  }
+
   public static EventIterator create(ObjectMapper objectMapper, JsonFactory jsonFactory, InputStream inputStream) throws IOException {
     JsonParser jsonParser = jsonFactory.createParser(inputStream);
+    return create(objectMapper, jsonFactory, jsonParser);
+  }
+
+  public static EventIterator create(ObjectMapper objectMapper, JsonFactory jsonFactory, JsonParser jsonParser) throws IOException {
     Iterator<JsonNode> iterator = objectMapper.readValues(jsonParser, JsonNode.class);
     return new EventIterator(jsonFactory, objectMapper, jsonParser, iterator);
   }
-
 
   @Override
   public boolean hasNext() {
