@@ -29,12 +29,12 @@ public class SplunkHttpSourceConnectorConfigTest {
 
   @Test
   public void sslContextFactory() {
-    final String EXPECTED_KEYSTORE_PATH = "file:///private/tmp/testing.keystore";
+    final String EXPECTED_KEYSTORE_PATH = "file:///tmp/testing.keystore";
     final String EXPECTED_KEYSTORE_PASSWORD = "lnr5o2qnafbhnbf";
     final Boolean EXPECTED_SSL_RENEGOTIATION_ALLOWED = false;
 
     Map<String, String> settings = ImmutableMap.of(
-        SplunkHttpSourceConnectorConfig.KEYSTORE_PATH_CONF, "/tmp/testing.keystore",
+        SplunkHttpSourceConnectorConfig.KEYSTORE_PATH_CONF, EXPECTED_KEYSTORE_PATH,
         SplunkHttpSourceConnectorConfig.KEYSTORE_PASSWORD_CONF, EXPECTED_KEYSTORE_PASSWORD,
         SplunkHttpSourceConnectorConfig.SSL_RENEGOTIATION_ALLOWED_CONF, EXPECTED_SSL_RENEGOTIATION_ALLOWED.toString(),
         SplunkHttpSourceConnectorConfig.EVENT_COLLECTOR_INDEX_DEFAULT_CONF, "default",
