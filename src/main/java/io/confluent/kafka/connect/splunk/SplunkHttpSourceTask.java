@@ -77,7 +77,7 @@ public class SplunkHttpSourceTask extends SourceTask {
     servletContextHandler.addServlet(DefaultServlet.class, "/");
     ServletHolder holder = servletContextHandler.addServlet(EventServlet.class, this.config.eventCollectorUrl());
 
-    this.sourceRecordConcurrentLinkedDeque = new SourceRecordConcurrentLinkedDeque();
+    this.sourceRecordConcurrentLinkedDeque = new SourceRecordConcurrentLinkedDeque(this.config.batchSize(), this.config.backoffMS());
 
     try {
       if (log.isInfoEnabled()) {
@@ -102,9 +102,9 @@ public class SplunkHttpSourceTask extends SourceTask {
 
   @Override
   public List<SourceRecord> poll() throws InterruptedException {
-    List<SourceRecord> records = new ArrayList<>();
+    List<SourceRecord> records = new ArrayList<>(this.config.batchSize());
 
-    while (!this.sourceRecordConcurrentLinkedDeque.drain(records, 1000)) {
+    while (!this.sourceRecordConcurrentLinkedDeque.drain(records)) {
       if (log.isDebugEnabled()) {
         log.debug("No records received. Sleeping.");
       }
