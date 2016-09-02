@@ -15,14 +15,21 @@
  */
 package io.confluent.kafka.connect.splunk;
 
-import io.confluent.kafka.connect.utils.config.MarkdownFormatter;
-import org.junit.Test;
+import com.fasterxml.jackson.core.JsonGenerator;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.module.SimpleModule;
 
-public class SplunkHttpSinkConnectorConfigTest {
-  @Test
-  public void doc() {
-    System.out.println(
-        MarkdownFormatter.toMarkdown(SplunkHttpSinkConnectorConfig.conf())
-    );
+import java.util.Date;
+
+class ObjectMapperFactory {
+  public static ObjectMapper create() {
+    ObjectMapper mapper = new ObjectMapper();
+    SimpleModule module = new SimpleModule();
+    module.addSerializer(Date.class, new DateSerializer());
+    module.addDeserializer(Date.class, new DateDeserializer());
+    mapper.registerModule(module);
+    mapper.configure(JsonGenerator.Feature.AUTO_CLOSE_TARGET, false);
+    mapper.configure(JsonGenerator.Feature.WRITE_BIGDECIMAL_AS_PLAIN, true);
+    return mapper;
   }
 }

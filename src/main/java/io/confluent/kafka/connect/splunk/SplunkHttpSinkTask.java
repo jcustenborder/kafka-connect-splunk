@@ -1,12 +1,12 @@
 /**
  * Copyright (C) ${project.inceptionYear} Jeremy Custenborder (jcustenborder@gmail.com)
- *
+ * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
- *         http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -15,20 +15,23 @@
  */
 package io.confluent.kafka.connect.splunk;
 
-import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.api.client.http.GZipEncoding;
 import com.google.api.client.http.GenericUrl;
+import com.google.api.client.http.HttpMediaType;
 import com.google.api.client.http.HttpRequest;
 import com.google.api.client.http.HttpRequestFactory;
 import com.google.api.client.http.HttpRequestInitializer;
 import com.google.api.client.http.HttpResponse;
 import com.google.api.client.http.HttpTransport;
 import com.google.api.client.http.javanet.NetHttpTransport;
+import com.google.api.client.json.Json;
 import com.google.api.client.json.JsonFactory;
 import com.google.api.client.json.JsonObjectParser;
 import com.google.api.client.json.jackson2.JacksonFactory;
 import org.apache.kafka.clients.consumer.OffsetAndMetadata;
 import org.apache.kafka.common.TopicPartition;
+import org.apache.kafka.connect.errors.ConnectException;
 import org.apache.kafka.connect.errors.RetriableException;
 import org.apache.kafka.connect.sink.SinkRecord;
 import org.apache.kafka.connect.sink.SinkTask;
@@ -41,13 +44,16 @@ import java.io.IOException;
 import java.security.GeneralSecurityException;
 import java.util.Collection;
 import java.util.Map;
+import java.util.logging.Level;
 
 public class SplunkHttpSinkTask extends SinkTask {
+  static final HttpMediaType JSON_MEDIA_TYPE = new HttpMediaType(Json.MEDIA_TYPE);
   private static Logger log = LoggerFactory.getLogger(SplunkHttpSinkTask.class);
   SplunkHttpSinkConnectorConfig config;
   HttpTransport transport;
   JsonFactory jsonFactory = new JacksonFactory();
   HttpRequestFactory httpRequestFactory;
+  HttpRequestInitializer httpRequestInitializer;
   GenericUrl eventCollectorUrl;
   ObjectMapper mapper;
 
@@ -59,6 +65,14 @@ public class SplunkHttpSinkTask extends SinkTask {
   @Override
   public void start(Map<String, String> map) {
     this.config = new SplunkHttpSinkConnectorConfig(map);
+
+    java.util.logging.Logger logger = java.util.logging.Logger.getLogger(HttpTransport.class.getName());
+    logger.addHandler(new RequestLoggingHandler(log));
+    if (this.config.curlLoggingEnabled()) {
+      logger.setLevel(Level.ALL);
+    } else {
+      logger.setLevel(Level.WARNING);
+    }
 
     if (log.isInfoEnabled()) {
       log.info("Starting...");
@@ -89,16 +103,28 @@ public class SplunkHttpSinkTask extends SinkTask {
     }
 
     this.transport = transportBuilder.build();
-
     final String authHeaderValue = String.format("Splunk %s", this.config.authToken());
     final JsonObjectParser jsonObjectParser = new JsonObjectParser(jsonFactory);
-    this.httpRequestFactory = transport.createRequestFactory(new HttpRequestInitializer() {
+
+    final String userAgent = String.format("kafka-connect-splunk/%s", VersionUtil.getVersion());
+    final boolean curlLogging = this.config.curlLoggingEnabled();
+    this.httpRequestInitializer = new HttpRequestInitializer() {
       @Override
       public void initialize(HttpRequest httpRequest) throws IOException {
         httpRequest.getHeaders().setAuthorization(authHeaderValue);
+        httpRequest.getHeaders().setAccept(Json.MEDIA_TYPE);
+        httpRequest.getHeaders().setUserAgent(userAgent);
         httpRequest.setParser(jsonObjectParser);
+        httpRequest.setEncoding(new GZipEncoding());
+        httpRequest.setThrowExceptionOnExecuteError(false);
+        httpRequest.setConnectTimeout(config.connectTimeout());
+        httpRequest.setReadTimeout(config.readTimeout());
+        httpRequest.setCurlLoggingEnabled(curlLogging);
+//        httpRequest.setLoggingEnabled(curlLogging);
       }
-    });
+    };
+
+    this.httpRequestFactory = this.transport.createRequestFactory(this.httpRequestInitializer);
 
     this.eventCollectorUrl = new GenericUrl();
     this.eventCollectorUrl.setRawPath("/services/collector/event");
@@ -115,8 +141,7 @@ public class SplunkHttpSinkTask extends SinkTask {
       log.info("Setting Splunk Http Event Collector Url to {}", this.eventCollectorUrl);
     }
 
-    this.mapper = new ObjectMapper();
-    this.mapper.configure(JsonGenerator.Feature.AUTO_CLOSE_TARGET, false);
+    this.mapper = ObjectMapperFactory.create();
   }
 
 
@@ -151,10 +176,30 @@ public class SplunkHttpSinkTask extends SinkTask {
 
       HttpRequest httpRequest = this.httpRequestFactory.buildPostRequest(this.eventCollectorUrl, sinkRecordContent);
       HttpResponse httpResponse = httpRequest.execute();
-      SplunkStatusMessage statusMessage = httpResponse.parseAs(SplunkStatusMessage.class);
 
-      if (!statusMessage.isSuccessful()) {
-        throw new RetriableException(statusMessage.text());
+      if (httpResponse.getStatusCode() == 403) {
+        throw new ConnectException("Authentication was not successful. Please check the token with Splunk.");
+      }
+
+      if (httpResponse.getStatusCode() == 417) {
+        if (log.isWarnEnabled()) {
+          log.warn("This exception happens when too much content is pushed to splunk per call. Look at this blog post " +
+              "http://blogs.splunk.com/2016/08/12/handling-http-event-collector-hec-content-length-too-large-errors-without-pulling-your-hair-out/" +
+              " Setting consumer.max.poll.records to a lower value will decrease the number of message posted to Splunk " +
+              "at once.");
+        }
+        throw new ConnectException("Status 417: Content-Length of XXXXX too large (maximum is 1000000). Verify Splunk config or " +
+            " lower the value in consumer.max.poll.records.");
+      }
+
+      if (JSON_MEDIA_TYPE.equalsIgnoreParameters(httpResponse.getMediaType())) {
+        SplunkStatusMessage statusMessage = httpResponse.parseAs(SplunkStatusMessage.class);
+
+        if (!statusMessage.isSuccessful()) {
+          throw new RetriableException(statusMessage.toString());
+        }
+      } else {
+        throw new RetriableException("Media type of " + Json.MEDIA_TYPE + " was not returned.");
       }
     } catch (IOException e) {
       throw new RetriableException(

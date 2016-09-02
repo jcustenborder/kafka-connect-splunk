@@ -1,12 +1,12 @@
 /**
  * Copyright (C) ${project.inceptionYear} Jeremy Custenborder (jcustenborder@gmail.com)
- *
+ * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
- *         http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -32,6 +32,10 @@ public class SplunkHttpSinkConnectorConfig extends AbstractConfig {
   public static final String SSL_VALIDATE_CERTIFICATES_CONF = "splunk.ssl.validate.certs";
   public static final String SSL_TRUSTSTORE_PATH_CONF = "splunk.ssl.trust.store.path";
   public static final String SSL_TRUSTSTORE_PASSWORD_CONF = "splunk.ssl.trust.store.password";
+  public static final String CONNECT_TIMEOUT_CONF = "splunk.connect.timeout.ms";
+  public static final String READ_TIMEOUT_CONF = "splunk.read.timeout.ms";
+  public static final String CURL_LOGGING_ENABLED_CONF = "splunk.curl.logging.enabled";
+
   static final String AUTHORIZATION_TOKEN_DOC = "The authorization token to use when writing data to splunk.";
   static final String REMOTE_PORT_DOC = "Port on the remote splunk server to write to.";
   static final String REMOTE_HOST_DOC = "The hostname of the remote splunk host to write data do.";
@@ -40,7 +44,11 @@ public class SplunkHttpSinkConnectorConfig extends AbstractConfig {
       "of the remote host.";
   static final String SSL_TRUSTSTORE_PATH_DOC = "Path on the local disk to the certificate trust store.";
   static final String SSL_TRUSTSTORE_PASSWORD_DOC = "Password for the trust store.";
-
+  static final String CONNECT_TIMEOUT_DOC = "The maximum amount of time for a connection to be established.";
+  static final String READ_TIMEOUT_DOC = "Sets the timeout in milliseconds to read data from an established connection " +
+      "or 0 for an infinite timeout.";
+  static final String CURL_LOGGING_ENABLED_DOC = "Flag to determine if requests to Splunk should be logged in curl form." +
+      " This will output a curl command to replicate the call to Splunk.";
 
   public SplunkHttpSinkConnectorConfig(ConfigDef config, Map<String, String> parsedConfig) {
     super(config, parsedConfig);
@@ -58,7 +66,10 @@ public class SplunkHttpSinkConnectorConfig extends AbstractConfig {
         .define(SSL_CONF, Type.BOOLEAN, true, Importance.HIGH, SSL_DOC)
         .define(SSL_VALIDATE_CERTIFICATES_CONF, Type.BOOLEAN, true, Importance.MEDIUM, SSL_VALIDATE_CERTIFICATES_DOC)
         .define(SSL_TRUSTSTORE_PATH_CONF, Type.STRING, "", Importance.HIGH, SSL_TRUSTSTORE_PATH_DOC)
-        .define(SSL_TRUSTSTORE_PASSWORD_CONF, Type.PASSWORD, "", Importance.HIGH, SSL_TRUSTSTORE_PASSWORD_DOC);
+        .define(SSL_TRUSTSTORE_PASSWORD_CONF, Type.PASSWORD, "", Importance.HIGH, SSL_TRUSTSTORE_PASSWORD_DOC)
+        .define(CONNECT_TIMEOUT_CONF, Type.INT, 20000, Importance.LOW, CONNECT_TIMEOUT_DOC)
+        .define(READ_TIMEOUT_CONF, Type.INT, 30000, Importance.LOW, READ_TIMEOUT_DOC)
+        .define(CURL_LOGGING_ENABLED_CONF, Type.BOOLEAN, false, Importance.LOW, CURL_LOGGING_ENABLED_DOC);
   }
 
   public String authToken() {
@@ -93,4 +104,17 @@ public class SplunkHttpSinkConnectorConfig extends AbstractConfig {
   public String trustStorePassword() {
     return this.getPassword(SSL_TRUSTSTORE_PASSWORD_CONF).toString();
   }
+
+  public int connectTimeout() {
+    return this.getInt(CONNECT_TIMEOUT_CONF);
+  }
+
+  public int readTimeout() {
+    return this.getInt(READ_TIMEOUT_CONF);
+  }
+
+  public boolean curlLoggingEnabled() {
+    return this.getBoolean(CURL_LOGGING_ENABLED_CONF);
+  }
+
 }

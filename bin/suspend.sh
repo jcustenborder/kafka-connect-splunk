@@ -28,4 +28,4 @@ fi
 export CLASSPATH="$(find target/ -type f -name '*.jar'| grep '\-package' | tr '\n' ':')"
 export KAFKA_JMX_OPTS='-Xdebug -agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=5005'
 
-$CONFLUENT_HOME/bin/connect-standalone connect/connect-avro-docker.properties config/salesforce.properties
+$CONFLUENT_HOME/bin/connect-standalone connect/connect-avro-docker.properties config/SplunkHttpSink.properties config/SplunkHttpSource.properties
