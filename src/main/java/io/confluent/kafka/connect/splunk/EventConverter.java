@@ -112,6 +112,10 @@ class EventConverter {
     setFieldValue(this.mapper, messageNode, valueStruct, "index", String.class);
     setFieldValue(this.mapper, messageNode, valueStruct, "event", String.class);
 
+    if (null == valueStruct.get("time")) {
+      valueStruct.put("time", new Date(this.time.milliseconds()));
+    }
+
     String host = valueStruct.getString("host");
 
     if (null == host) {
