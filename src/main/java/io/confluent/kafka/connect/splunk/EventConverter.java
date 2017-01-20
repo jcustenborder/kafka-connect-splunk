@@ -1,12 +1,12 @@
 /**
  * Copyright © 2016 Jeremy Custenborder (jcustenborder@gmail.com)
- *
+ * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -17,7 +17,6 @@ package io.confluent.kafka.connect.splunk;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Preconditions;
 import org.apache.kafka.common.utils.SystemTime;
 import org.apache.kafka.common.utils.Time;
@@ -58,7 +57,6 @@ class EventConverter {
 
   private static final Map<String, ?> EMPTY_MAP = new HashMap<>();
 
-  final ObjectMapper mapper;
   final SplunkHttpSourceConnectorConfig config;
   final String topicPrefix;
   final boolean topicPerIndex;
@@ -68,8 +66,7 @@ class EventConverter {
 
   Time time = new SystemTime();
 
-  EventConverter(ObjectMapper mapper, SplunkHttpSourceConnectorConfig config) {
-    this.mapper = mapper;
+  EventConverter(SplunkHttpSourceConnectorConfig config) {
     this.config = config;
     this.topicPerIndex = this.config.topicPerIndex();
     this.topicPrefix = this.config.topicPrefix();
@@ -78,7 +75,7 @@ class EventConverter {
     this.defaultIndex = this.config.defaultIndex();
   }
 
-  static <T> void setFieldValue(ObjectMapper mapper, JsonNode messageNode, Struct struct, String fieldName, Class<T> cls) {
+  static <T> void setFieldValue(JsonNode messageNode, Struct struct, String fieldName, Class<T> cls) {
     T structValue = null;
 
     if (messageNode.has(fieldName)) {
@@ -86,12 +83,12 @@ class EventConverter {
 
       if (String.class.equals(cls) && valueNode.isObject()) {
         try {
-          structValue = (T) mapper.writeValueAsString(valueNode);
+          structValue = (T) ObjectMapperFactory.INSTANCE.writeValueAsString(valueNode);
         } catch (JsonProcessingException e) {
           throw new IllegalStateException(e);
         }
       } else if (!valueNode.isNull()) {
-        structValue = mapper.convertValue(valueNode, cls);
+        structValue = ObjectMapperFactory.INSTANCE.convertValue(valueNode, cls);
       }
     }
 
@@ -105,12 +102,12 @@ class EventConverter {
     Struct keyStruct = new Struct(KEY_SCHEMA);
     Struct valueStruct = new Struct(VALUE_SCHEMA);
 
-    setFieldValue(this.mapper, messageNode, valueStruct, "time", Date.class);
-    setFieldValue(this.mapper, messageNode, valueStruct, "host", String.class);
-    setFieldValue(this.mapper, messageNode, valueStruct, "source", String.class);
-    setFieldValue(this.mapper, messageNode, valueStruct, "sourcetype", String.class);
-    setFieldValue(this.mapper, messageNode, valueStruct, "index", String.class);
-    setFieldValue(this.mapper, messageNode, valueStruct, "event", String.class);
+    setFieldValue(messageNode, valueStruct, "time", Date.class);
+    setFieldValue(messageNode, valueStruct, "host", String.class);
+    setFieldValue(messageNode, valueStruct, "source", String.class);
+    setFieldValue(messageNode, valueStruct, "sourcetype", String.class);
+    setFieldValue(messageNode, valueStruct, "index", String.class);
+    setFieldValue(messageNode, valueStruct, "event", String.class);
 
     if (null == valueStruct.get("time")) {
       valueStruct.put("time", new Date(this.time.milliseconds()));

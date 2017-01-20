@@ -1,12 +1,12 @@
 /**
  * Copyright © 2016 Jeremy Custenborder (jcustenborder@gmail.com)
- *
+ * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -54,9 +54,7 @@ public class SplunkHttpSourceTaskTest {
     byte[] buffer;
 
     try (ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
-      SinkRecordContent content = new SinkRecordContent(
-          ObjectMapperFactory.create(),
-          sinkRecords);
+      SinkRecordContent content = new SinkRecordContent(sinkRecords);
       content.writeTo(outputStream);
       buffer = outputStream.toByteArray();
     }
@@ -76,7 +74,6 @@ public class SplunkHttpSourceTaskTest {
     settings.put(SplunkHttpSourceConnectorConfig.EVENT_COLLECTOR_INDEX_DEFAULT_CONF, "default");
     this.task.start(settings);
     assertNotNull(this.task.eventServlet);
-    assertNotNull(this.task.eventServlet.objectMapper);
     assertNotNull(this.task.eventServlet.config);
     assertNotNull(this.task.eventServlet.converter);
   }
