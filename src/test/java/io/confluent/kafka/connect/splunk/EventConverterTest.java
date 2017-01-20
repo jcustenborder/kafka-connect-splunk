@@ -1,12 +1,12 @@
 /**
  * Copyright © 2016 Jeremy Custenborder (jcustenborder@gmail.com)
- *
+ * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -41,7 +41,6 @@ public class EventConverterTest {
 
   final String TOPIC_PREFIX_CONF = "topic";
 
-  ObjectMapper mapper;
   SplunkHttpSourceConnectorConfig config;
   Map<String, String> settings;
 
@@ -53,7 +52,6 @@ public class EventConverterTest {
 
   @Before
   public void setup() {
-    this.mapper = ObjectMapperFactory.create();
     this.settings = new LinkedHashMap<>();
     this.settings.put(SplunkHttpSourceConnectorConfig.TOPIC_PREFIX_CONF, TOPIC_PREFIX_CONF);
     this.settings.put(SplunkHttpSourceConnectorConfig.TOPIC_PER_INDEX_CONF, Boolean.FALSE.toString());
@@ -80,7 +78,7 @@ public class EventConverterTest {
       Object structValue = valueStruct.get(entry.getKey());
 
       if (entry.getValue() instanceof Map) {
-        String text = this.mapper.writeValueAsString(entry.getValue());
+        String text = ObjectMapperFactory.INSTANCE.writeValueAsString(entry.getValue());
         String structText = (String) structValue;
         assertThat(entry.getKey() + " should match.", structText, IsEqual.equalTo(text));
       } else {
@@ -100,11 +98,11 @@ public class EventConverterTest {
         "event", "Hello world!"
     );
 
-    JsonNode jsonNode = this.mapper.convertValue(expected, JsonNode.class);
+    JsonNode jsonNode = ObjectMapperFactory.INSTANCE.convertValue(expected, JsonNode.class);
     assertNotNull("jsonNode should not be null.", jsonNode);
     assertTrue("jsonNode should be an object.", jsonNode.isObject());
 
-    EventConverter eventConverter = new EventConverter(mapper, config);
+    EventConverter eventConverter = new EventConverter(config);
     eventConverter.time = mock(Time.class);
     when(eventConverter.time.milliseconds()).thenReturn(TIME);
     SourceRecord sourceRecord = eventConverter.convert(jsonNode, "192.168.1.10");
@@ -124,11 +122,11 @@ public class EventConverterTest {
         )
     );
 
-    JsonNode jsonNode = this.mapper.convertValue(expected, JsonNode.class);
+    JsonNode jsonNode = ObjectMapperFactory.INSTANCE.convertValue(expected, JsonNode.class);
     assertNotNull("jsonNode should not be null.", jsonNode);
     assertTrue("jsonNode should be an object.", jsonNode.isObject());
 
-    EventConverter eventConverter = new EventConverter(mapper, config);
+    EventConverter eventConverter = new EventConverter(config);
     eventConverter.time = mock(Time.class);
     when(eventConverter.time.milliseconds()).thenReturn(TIME);
     SourceRecord sourceRecord = eventConverter.convert(jsonNode, "192.168.1.10");
@@ -143,11 +141,11 @@ public class EventConverterTest {
         "event", "Hello world!"
     );
 
-    JsonNode jsonNode = this.mapper.convertValue(expected, JsonNode.class);
+    JsonNode jsonNode = ObjectMapperFactory.INSTANCE.convertValue(expected, JsonNode.class);
     assertNotNull("jsonNode should not be null.", jsonNode);
     assertTrue("jsonNode should be an object.", jsonNode.isObject());
 
-    EventConverter eventConverter = new EventConverter(mapper, config);
+    EventConverter eventConverter = new EventConverter(config);
     eventConverter.time = mock(Time.class);
     when(eventConverter.time.milliseconds()).thenReturn(TIME);
     SourceRecord sourceRecord = eventConverter.convert(jsonNode, "192.168.1.10");

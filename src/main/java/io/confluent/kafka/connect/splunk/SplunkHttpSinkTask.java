@@ -1,12 +1,12 @@
 /**
  * Copyright © 2016 Jeremy Custenborder (jcustenborder@gmail.com)
- *
+ * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -15,7 +15,6 @@
  */
 package io.confluent.kafka.connect.splunk;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.api.client.http.GZipEncoding;
 import com.google.api.client.http.GenericUrl;
 import com.google.api.client.http.HttpMediaType;
@@ -55,7 +54,6 @@ public class SplunkHttpSinkTask extends SinkTask {
   HttpRequestFactory httpRequestFactory;
   HttpRequestInitializer httpRequestInitializer;
   GenericUrl eventCollectorUrl;
-  ObjectMapper mapper;
 
   @Override
   public String version() {
@@ -140,8 +138,6 @@ public class SplunkHttpSinkTask extends SinkTask {
     if (log.isInfoEnabled()) {
       log.info("Setting Splunk Http Event Collector Url to {}", this.eventCollectorUrl);
     }
-
-    this.mapper = ObjectMapperFactory.create();
   }
 
 
@@ -159,7 +155,7 @@ public class SplunkHttpSinkTask extends SinkTask {
         log.debug("Posting {} message(s) to {}", collection.size(), this.eventCollectorUrl);
       }
 
-      SinkRecordContent sinkRecordContent = new SinkRecordContent(this.mapper, collection);
+      SinkRecordContent sinkRecordContent = new SinkRecordContent(collection);
 
       if (log.isDebugEnabled()) {
         try (ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {

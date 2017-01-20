@@ -1,12 +1,12 @@
 /**
  * Copyright © 2016 Jeremy Custenborder (jcustenborder@gmail.com)
- *
+ * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -17,7 +17,6 @@ package io.confluent.kafka.connect.splunk;
 
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.Test;
 
 import java.io.IOException;
@@ -30,10 +29,9 @@ public class EventIteratorTest {
 
   @Test
   public void iterate() throws IOException {
-    ObjectMapper mapper = new ObjectMapper();
     JsonFactory factory = new JsonFactory();
     InputStream inputStream = events();
-    EventIterator iterator = EventIterator.create(mapper, factory, inputStream);
+    EventIterator iterator = EventIterator.create(factory, inputStream);
 
     while (iterator.hasNext()) {
       JsonNode jsonNode = iterator.next();

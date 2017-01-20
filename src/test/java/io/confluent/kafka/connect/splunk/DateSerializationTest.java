@@ -15,45 +15,29 @@
  */
 package io.confluent.kafka.connect.splunk;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.io.IOException;
 import java.math.BigDecimal;
 import java.util.Date;
 
 import static org.junit.Assert.*;
 
 public class DateSerializationTest {
-  ObjectMapper mapper;
-
-  @Before
-  public void setup() {
-    this.mapper = ObjectMapperFactory.create();
+  void roundtrip(final Date expected) throws IOException {
+    String input = ObjectMapperFactory.INSTANCE.writeValueAsString(expected);
+    Date actual = ObjectMapperFactory.INSTANCE.readValue(input, Date.class);
+    assertEquals("actual does not match.", expected, actual);
   }
 
   @Test
-  public void roundTrip() {
+  public void roundtrip() throws IOException {
     final Date expected = new Date(1472507332123L);
-    final BigDecimal expectedIntermediateValue = BigDecimal.valueOf(expected.getTime(), 3);
-    JsonNode intermediateNode = this.mapper.convertValue(expected, JsonNode.class);
-    assertNotNull(intermediateNode);
-    assertTrue("intermediateNode should be a number.", intermediateNode.isNumber());
-    BigDecimal intermediateValue = intermediateNode.decimalValue();
-    intermediateValue.setScale(3);
-    assertEquals(expectedIntermediateValue, intermediateValue);
-    final Date actual = this.mapper.convertValue(intermediateNode, Date.class);
-    assertEquals(expected, actual);
+    roundtrip(expected);
+    roundtrip(null);
   }
-
-  @Test
-  public void nulls() {
-    Date date = this.mapper.convertValue(null, Date.class);
-    assertNull(date);
-    JsonNode inputNode = this.mapper.convertValue(null, JsonNode.class);
-    date = this.mapper.convertValue(inputNode, Date.class);
-    assertNull(date);
-  }
-
 }

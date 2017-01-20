@@ -15,23 +15,120 @@
  */
 package io.confluent.kafka.connect.splunk;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableMap;
+import org.apache.kafka.connect.data.Schema;
 import org.apache.kafka.connect.data.Struct;
 import org.apache.kafka.connect.sink.SinkRecord;
-import org.junit.Assert;
 import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Date;
 import java.util.Map;
 
-public class SinkRecordContentTest {
+import static org.junit.Assert.assertEquals;
 
+public class SinkRecordContentTest {
+  private static final Logger log = LoggerFactory.getLogger(SinkRecordContentTest.class);
+
+  SinkRecord record(Object value) {
+    return record(null, value);
+  }
+
+  SinkRecord record(Schema schema, Object value) {
+    SinkRecord record = new SinkRecord(
+        "topic",
+        1,
+        null,
+        null,
+        schema,
+        value,
+        1L
+    );
+
+    return record;
+  }
+
+  void test(final SinkRecord input, final String expected) throws IOException {
+    SinkRecordContent content = new SinkRecordContent(input);
+    final String actual;
+    try (ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
+      content.writeTo(outputStream);
+      actual = new String(outputStream.toByteArray(), "UTF-8");
+    }
+    log.trace("actual = {}", actual);
+    assertEquals(expected, actual);
+  }
+
+  @Test
+  public void map() throws IOException {
+    final Map<String, ?> value = ImmutableMap.of("host", "hostname.example.com", "time", new Date(1472256858924L), "source", "testapp", "sourcetype", "txt", "index", "main");
+    final SinkRecord record = record(value);
+    final String expected = "{\"host\":\"hostname.example.com\",\"time\":1472256858.924,\"sourcetype\":\"txt\",\"index\":\"main\",\"source\":\"testapp\"}";
+    test(record, expected);
+  }
+
+  @Test
+  public void struct000() throws IOException {
+    final Struct value = new Struct(EventConverter.VALUE_SCHEMA).put("host", "hostname.example.com");
+    final SinkRecord record = record(value);
+
+    final String expected = "{\"host\":\"hostname.example.com\"}";
+    test(record, expected);
+  }
+
+  @Test
+  public void struct001() throws IOException {
+    final Struct value = new Struct(EventConverter.VALUE_SCHEMA)
+        .put("host", "hostname.example.com")
+        .put("time", new Date(1472256858924L))
+        .put("source", "testapp");
+    final SinkRecord record = record(value);
+
+    final String expected = "{\"host\":\"hostname.example.com\",\"time\":1472256858.924,\"source\":\"testapp\"}";
+    test(record, expected);
+  }
+
+  @Test
+  public void struct002() throws IOException {
+    final Struct value = new Struct(EventConverter.VALUE_SCHEMA)
+        .put("host", "hostname.example.com")
+        .put("time", new Date(1472256858924L))
+        .put("source", "testapp")
+        .put("sourcetype", "txt")
+        .put("index", "main");
+    final SinkRecord record = record(value);
+
+    final String expected = "{\"host\":\"hostname.example.com\",\"time\":1472256858.924,\"sourcetype\":\"txt\",\"index\":\"main\",\"source\":\"testapp\"}";
+    test(record, expected);
+  }
+
+  @Test
+  public void string001() throws IOException {
+    final SinkRecord record = record("This is a random value");
+
+    final String expected = "{\"event\":\"This is a random value\"}";
+    test(record, expected);
+  }
+
+  @Test
+  public void boolean001() throws IOException {
+    final SinkRecord record = record(true);
+
+    final String expected = "{\"event\":true}";
+    test(record, expected);
+  }
+
+  @Test
+  public void number001() throws IOException {
+    final SinkRecord record = record(12341233);
+
+    final String expected = "{\"event\":12341233}";
+    test(record, expected);
+  }
 
   public static void addRecord(Collection<SinkRecord> records, Map<String, ?> values) {
     Struct valueStruct = new Struct(EventConverter.VALUE_SCHEMA);
@@ -51,60 +148,4 @@ public class SinkRecordContentTest {
         )
     );
   }
-
-  @Test
-  public void issue3() throws IOException {
-
-    Map<?, ?> input = ImmutableMap.of("host", "hostname.example.com", "time", new Date(1472256858924L), "source", "testapp");
-
-    Collection<SinkRecord> sinkRecords = Arrays.asList(
-        new SinkRecord(
-            "topic",
-            1,
-            null,
-            null,
-            null,
-            input,
-            1L
-        )
-    );
-
-    ObjectMapper mapper = ObjectMapperFactory.create();
-
-    SinkRecordContent content = new SinkRecordContent(mapper, sinkRecords);
-    String actual;
-    try (ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
-      content.writeTo(outputStream);
-      actual = new String(outputStream.toByteArray(), "UTF-8");
-    }
-    System.out.println(actual);
-//    Assert.assertEquals(expected, actual);
-  }
-
-
-  @Test
-  public void writeTo() throws IOException {
-    Collection<SinkRecord> sinkRecords = new ArrayList<>();
-    addRecord(sinkRecords, ImmutableMap.of("host", "hostname.example.com"));
-    addRecord(sinkRecords, ImmutableMap.of("host", "hostname.example.com", "time", new Date(1472256858924L), "source", "testapp"));
-    addRecord(sinkRecords, ImmutableMap.of("host", "hostname.example.com", "time", new Date(1472256858924L), "source", "testapp", "sourcetype", "txt", "index", "main"));
-
-    ObjectMapper mapper = ObjectMapperFactory.create();
-
-    SinkRecordContent content = new SinkRecordContent(mapper, sinkRecords);
-
-    String actual;
-    try (ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
-      content.writeTo(outputStream);
-      actual = new String(outputStream.toByteArray(), "UTF-8");
-    }
-
-    final String expected = "{\"host\":\"hostname.example.com\"}\n" +
-        "{\"host\":\"hostname.example.com\",\"time\":1472256858.924,\"source\":\"testapp\"}\n" +
-        "{\"host\":\"hostname.example.com\",\"time\":1472256858.924,\"sourcetype\":\"txt\",\"index\":\"main\",\"source\":\"testapp\"}";
-
-    System.out.println(actual);
-    Assert.assertEquals(expected, actual);
-  }
-
 }

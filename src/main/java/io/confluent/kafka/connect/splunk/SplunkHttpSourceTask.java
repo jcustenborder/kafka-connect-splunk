@@ -1,12 +1,12 @@
 /**
  * Copyright © 2016 Jeremy Custenborder (jcustenborder@gmail.com)
- *
+ * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -16,7 +16,6 @@
 package io.confluent.kafka.connect.splunk;
 
 import com.fasterxml.jackson.core.JsonFactory;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.confluent.kafka.connect.utils.data.SourceRecordConcurrentLinkedDeque;
 import org.apache.kafka.connect.errors.ConnectException;
 import org.apache.kafka.connect.source.SourceRecord;
@@ -95,9 +94,8 @@ public class SplunkHttpSourceTask extends SourceTask {
     }
 
     JsonFactory jsonFactory = new JsonFactory();
-    ObjectMapper objectMapper = ObjectMapperFactory.create();
 
-    this.eventServlet.configure(this.config, jsonFactory, objectMapper, this.sourceRecordConcurrentLinkedDeque);
+    this.eventServlet.configure(this.config, jsonFactory, this.sourceRecordConcurrentLinkedDeque);
   }
 
   @Override
