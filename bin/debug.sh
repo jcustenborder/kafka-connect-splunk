@@ -15,17 +15,12 @@
 # limitations under the License.
 #
 
+: ${SUSPEND:='n'}
+
+set -e
+
 mvn clean package
+export KAFKA_JMX_OPTS="-Xdebug -agentlib:jdwp=transport=dt_socket,server=y,suspend=${SUSPEND},address=5005"
+export CLASSPATH="$(find target/kafka-connect-target/share/java -type f -name '*.jar' | tr '\n' ':')"
 
-if [ $? -eq 0 ]
-then
-    echo "maven finished"
-else
-    echo "Maven failed"
-    exit 1
-fi
-
-export CLASSPATH="$(find target/ -type f -name '*.jar'| grep '\-package' | tr '\n' ':')"
-export KAFKA_JMX_OPTS='-Xdebug -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5005'
-
-$CONFLUENT_HOME/bin/connect-standalone connect/connect-avro-docker.properties config/SplunkHttpSource.properties config/SplunkHttpSink.properties
+$CONFLUENT_HOME/bin/connect-standalone
