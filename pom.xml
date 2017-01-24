@@ -30,18 +30,11 @@
     <name>kafka-connect-splunk</name>
     <url>https://github.com/jcustenborder/kafka-connect-splunk</url>
     <inceptionYear>2016</inceptionYear>
-    <licenses>
-        <license>
-            <name>The Apache License, Version 2.0</name>
-            <url>https://www.apache.org/licenses/LICENSE-2.0</url>
-            <distribution>repo</distribution>
-        </license>
-    </licenses>
     <developers>
         <developer>
             <name>Jeremy Custenborder</name>
             <email>jeremy@confluent.io</email>
-            <url>https://api.github.com/users/jcustenborder</url>
+            <url>https://github.com/jcustenborder</url>
             <roles>
                 <role>maintainer</role>
             </roles>
@@ -53,11 +46,11 @@
     <scm>
         <connection>scm:git:https://github.com/jcustenborder/kafka-connect-splunk.git</connection>
         <developerConnection>scm:git:git@github.com:jcustenborder/kafka-connect-splunk.git</developerConnection>
-        <url>https://api.github.com/repos/jcustenborder/kafka-connect-splunk</url>
+        <url>https://github.com/jcustenborder/kafka-connect-splunk</url>
     </scm>
     <issueManagement>
         <system>github</system>
-        <url>https://api.github.com/repos/jcustenborder/kafka-connect-splunk/issues</url>
+        <url>https://github.com/jcustenborder/kafka-connect-splunk/issues</url>
     </issueManagement>
     <properties>
         <jersey.version>1.19.1</jersey.version>
