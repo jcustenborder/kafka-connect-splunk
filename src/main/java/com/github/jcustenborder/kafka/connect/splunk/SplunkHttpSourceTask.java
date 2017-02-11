@@ -16,7 +16,7 @@
 package com.github.jcustenborder.kafka.connect.splunk;
 
 import com.fasterxml.jackson.core.JsonFactory;
-import io.confluent.kafka.connect.utils.data.SourceRecordConcurrentLinkedDeque;
+import com.github.jcustenborder.kafka.connect.utils.data.SourceRecordConcurrentLinkedDeque;
 import org.apache.kafka.connect.errors.ConnectException;
 import org.apache.kafka.connect.source.SourceRecord;
 import org.apache.kafka.connect.source.SourceTask;

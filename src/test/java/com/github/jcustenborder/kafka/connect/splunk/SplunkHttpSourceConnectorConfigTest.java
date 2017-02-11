@@ -15,8 +15,8 @@
  */
 package com.github.jcustenborder.kafka.connect.splunk;
 
+import com.github.jcustenborder.kafka.connect.utils.config.MarkdownFormatter;
 import com.google.common.collect.ImmutableMap;
-import io.confluent.kafka.connect.utils.config.MarkdownFormatter;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.jupiter.api.Test;
 

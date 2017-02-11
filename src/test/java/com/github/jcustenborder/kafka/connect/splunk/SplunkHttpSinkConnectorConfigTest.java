@@ -15,7 +15,7 @@
  */
 package com.github.jcustenborder.kafka.connect.splunk;
 
-import io.confluent.kafka.connect.utils.config.MarkdownFormatter;
+import com.github.jcustenborder.kafka.connect.utils.config.MarkdownFormatter;
 import org.junit.jupiter.api.Test;
 
 public class SplunkHttpSinkConnectorConfigTest {
