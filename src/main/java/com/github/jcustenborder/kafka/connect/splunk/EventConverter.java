@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -34,12 +34,14 @@ import java.util.concurrent.ConcurrentSkipListMap;
 class EventConverter {
   public static final Schema KEY_SCHEMA = SchemaBuilder.struct()
       .name("com.github.jcustenborder.kafka.connect.splunk.EventKey")
+      .doc("This schema represents the key for the data received from the Splunk listener.")
       .field("host", SchemaBuilder.string().doc("The host value to assign to the event data. " +
           "This is typically the hostname of the client from which you're sending data.").build())
       .build();
 
   public static final Schema VALUE_SCHEMA = SchemaBuilder.struct()
       .name("com.github.jcustenborder.kafka.connect.splunk.Event")
+      .doc("This schema represents the data received from the Splunk listener.")
       .field("time", Timestamp.builder().optional().doc("The event time.").build())
       .field("host", SchemaBuilder.string().optional().doc("The host value to assign to the event data. " +
           "This is typically the hostname of the client from which you're sending data.").build())
@@ -68,11 +70,11 @@ class EventConverter {
 
   EventConverter(SplunkHttpSourceConnectorConfig config) {
     this.config = config;
-    this.topicPerIndex = this.config.topicPerIndex();
-    this.topicPrefix = this.config.topicPrefix();
+    this.topicPerIndex = this.config.topicPerIndex;
+    this.topicPrefix = this.config.topicPrefix;
     this.indexToTopicLookup = new ConcurrentSkipListMap<>(String.CASE_INSENSITIVE_ORDER);
     this.topic = this.topicPerIndex ? null : this.topicPrefix;
-    this.defaultIndex = this.config.defaultIndex();
+    this.defaultIndex = this.config.defaultIndex;
   }
 
   static <T> void setFieldValue(JsonNode messageNode, Struct struct, String fieldName, Class<T> cls) {

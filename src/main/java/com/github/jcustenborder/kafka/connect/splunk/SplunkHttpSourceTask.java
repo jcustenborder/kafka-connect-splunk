@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,6 +16,7 @@
 package com.github.jcustenborder.kafka.connect.splunk;
 
 import com.fasterxml.jackson.core.JsonFactory;
+import com.github.jcustenborder.kafka.connect.utils.VersionUtil;
 import com.github.jcustenborder.kafka.connect.utils.data.SourceRecordConcurrentLinkedDeque;
 import org.apache.kafka.connect.errors.ConnectException;
 import org.apache.kafka.connect.source.SourceRecord;
@@ -47,7 +48,7 @@ public class SplunkHttpSourceTask extends SourceTask {
 
   @Override
   public String version() {
-    return VersionUtil.getVersion();
+    return VersionUtil.version(this.getClass());
   }
 
   @Override
@@ -64,24 +65,20 @@ public class SplunkHttpSourceTask extends SourceTask {
         new SslConnectionFactory(sslContextFactory, "http/1.1"),
         new HttpConnectionFactory(httpsConfiguration)
     );
-    sslConnector.setPort(this.config.port());
+    sslConnector.setPort(this.config.port);
 
     server.setConnectors(new ServerConnector[]{sslConnector});
 
-    if (log.isInfoEnabled()) {
-      log.info("Configuring Splunk Event Collector Servlet for {}", this.config.eventCollectorUrl());
-    }
+    log.info("Configuring Splunk Event Collector Servlet for {}", this.config.eventCollectorUrl);
 
     ServletContextHandler servletContextHandler = new ServletContextHandler(server, "/", ServletContextHandler.NO_SESSIONS);
     servletContextHandler.addServlet(DefaultServlet.class, "/");
-    ServletHolder holder = servletContextHandler.addServlet(EventServlet.class, this.config.eventCollectorUrl());
+    ServletHolder holder = servletContextHandler.addServlet(EventServlet.class, this.config.eventCollectorUrl);
 
-    this.sourceRecordConcurrentLinkedDeque = new SourceRecordConcurrentLinkedDeque(this.config.batchSize(), this.config.backoffMS());
+    this.sourceRecordConcurrentLinkedDeque = new SourceRecordConcurrentLinkedDeque(this.config.batchSize, this.config.backoffMS);
 
     try {
-      if (log.isInfoEnabled()) {
-        log.info("Starting web server on port {}", this.config.port());
-      }
+      log.info("Starting web server on port {}", this.config.port);
       server.start();
     } catch (Exception e) {
       throw new IllegalStateException("Exception thrown while starting server", e);
@@ -100,12 +97,10 @@ public class SplunkHttpSourceTask extends SourceTask {
 
   @Override
   public List<SourceRecord> poll() throws InterruptedException {
-    List<SourceRecord> records = new ArrayList<>(this.config.batchSize());
+    List<SourceRecord> records = new ArrayList<>(this.config.batchSize);
 
     while (!this.sourceRecordConcurrentLinkedDeque.drain(records)) {
-      if (log.isDebugEnabled()) {
-        log.debug("No records received. Sleeping.");
-      }
+      log.trace("No records received. Sleeping.");
     }
 
     return records;
@@ -116,9 +111,7 @@ public class SplunkHttpSourceTask extends SourceTask {
     try {
       this.server.stop();
     } catch (Exception e) {
-      if (log.isErrorEnabled()) {
-        log.error("Exception thrown calling server.stop()", e);
-      }
+      log.error("Exception thrown calling server.stop()", e);
     }
   }
 }

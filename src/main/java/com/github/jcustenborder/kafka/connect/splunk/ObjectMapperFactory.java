@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -43,6 +43,13 @@ import java.util.Set;
 class ObjectMapperFactory {
 
   public static final ObjectMapper INSTANCE;
+  static final Set<String> RESERVED_METADATA = ImmutableSet.of(
+      "time",
+      "host",
+      "source",
+      "sourcetype",
+      "index"
+  );
 
   static {
     ObjectMapper mapper = new ObjectMapper();
@@ -84,14 +91,6 @@ class ObjectMapperFactory {
       jsonGenerator.writeNumber(value);
     }
   }
-
-  static final Set<String> RESERVED_METADATA = ImmutableSet.of(
-      "time",
-      "host",
-      "source",
-      "sourcetype",
-      "index"
-  );
 
   static class StructSerializer extends JsonSerializer<Struct> {
 

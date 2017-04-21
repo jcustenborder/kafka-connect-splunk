@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -48,7 +48,7 @@ public class EventServlet extends HttpServlet {
     this.jsonFactory = jsonFactory;
     this.converter = new EventConverter(this.config);
     this.recordQueue = recordQueue;
-    this.allowedIndexes = this.config.allowedIndexes();
+    this.allowedIndexes = this.config.allowedIndexes;
   }
 
   @Override
@@ -76,9 +76,7 @@ public class EventServlet extends HttpServlet {
 
   @Override
   protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-    if (log.isInfoEnabled()) {
-      log.info("Reading message body.");
-    }
+    log.trace("Reading message body.");
 
     response.setHeader("X-Content-Type-Options", "nosniff");
     response.setHeader("X-Frame-Options", "SAMEORIGIN");
@@ -116,10 +114,7 @@ public class EventServlet extends HttpServlet {
       response.setStatus(200);
 
     } catch (Exception ex) {
-      if (log.isErrorEnabled()) {
-        log.error("Exception thrown", ex);
-      }
-
+      log.error("Exception thrown", ex);
       response.setStatus(500);
     }
   }

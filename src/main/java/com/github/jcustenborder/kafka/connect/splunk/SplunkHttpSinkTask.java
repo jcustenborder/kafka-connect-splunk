@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -15,6 +15,7 @@
  */
 package com.github.jcustenborder.kafka.connect.splunk;
 
+import com.github.jcustenborder.kafka.connect.utils.VersionUtil;
 import com.google.api.client.http.GZipEncoding;
 import com.google.api.client.http.GenericUrl;
 import com.google.api.client.http.HttpMediaType;
@@ -57,7 +58,7 @@ public class SplunkHttpSinkTask extends SinkTask {
 
   @Override
   public String version() {
-    return VersionUtil.getVersion();
+    return VersionUtil.version(this.getClass());
   }
 
   @Override
@@ -66,22 +67,18 @@ public class SplunkHttpSinkTask extends SinkTask {
 
     java.util.logging.Logger logger = java.util.logging.Logger.getLogger(HttpTransport.class.getName());
     logger.addHandler(new RequestLoggingHandler(log));
-    if (this.config.curlLoggingEnabled()) {
+    if (this.config.curlLoggingEnabled) {
       logger.setLevel(Level.ALL);
     } else {
       logger.setLevel(Level.WARNING);
     }
 
-    if (log.isInfoEnabled()) {
-      log.info("Starting...");
-    }
+    log.info("Starting...");
 
     NetHttpTransport.Builder transportBuilder = new NetHttpTransport.Builder();
 
-    if (!this.config.validateCertificates()) {
-      if (log.isWarnEnabled()) {
-        log.warn("Disabling ssl certificate verification.");
-      }
+    if (!this.config.validateCertificates) {
+      log.warn("Disabling ssl certificate verification.");
       try {
         transportBuilder.doNotValidateCertificate();
       } catch (GeneralSecurityException e) {
@@ -89,23 +86,21 @@ public class SplunkHttpSinkTask extends SinkTask {
       }
     }
 
-    if (this.config.hasTrustStorePath()) {
-      if (log.isInfoEnabled()) {
-        log.info("Loading trust store from {}.", this.config.trustStorePath());
-      }
-      try (FileInputStream inputStream = new FileInputStream(this.config.trustStorePath())) {
-        transportBuilder.trustCertificatesFromJavaKeyStore(inputStream, this.config.trustStorePassword());
+    if (this.config.hasTrustStorePath) {
+      log.info("Loading trust store from {}.", this.config.trustStorePath);
+      try (FileInputStream inputStream = new FileInputStream(this.config.trustStorePath)) {
+        transportBuilder.trustCertificatesFromJavaKeyStore(inputStream, this.config.trustStorePassword);
       } catch (GeneralSecurityException | IOException ex) {
         throw new IllegalStateException("Exception thrown while setting up trust certificates.", ex);
       }
     }
 
     this.transport = transportBuilder.build();
-    final String authHeaderValue = String.format("Splunk %s", this.config.authToken());
+    final String authHeaderValue = String.format("Splunk %s", this.config.authToken);
     final JsonObjectParser jsonObjectParser = new JsonObjectParser(jsonFactory);
 
-    final String userAgent = String.format("kafka-connect-splunk/%s", VersionUtil.getVersion());
-    final boolean curlLogging = this.config.curlLoggingEnabled();
+    final String userAgent = String.format("kafka-connect-splunk/%s", version());
+    final boolean curlLogging = this.config.curlLoggingEnabled;
     this.httpRequestInitializer = new HttpRequestInitializer() {
       @Override
       public void initialize(HttpRequest httpRequest) throws IOException {
@@ -115,8 +110,8 @@ public class SplunkHttpSinkTask extends SinkTask {
         httpRequest.setParser(jsonObjectParser);
         httpRequest.setEncoding(new GZipEncoding());
         httpRequest.setThrowExceptionOnExecuteError(false);
-        httpRequest.setConnectTimeout(config.connectTimeout());
-        httpRequest.setReadTimeout(config.readTimeout());
+        httpRequest.setConnectTimeout(config.connectTimeout);
+        httpRequest.setReadTimeout(config.readTimeout);
         httpRequest.setCurlLoggingEnabled(curlLogging);
 //        httpRequest.setLoggingEnabled(curlLogging);
       }
@@ -126,46 +121,40 @@ public class SplunkHttpSinkTask extends SinkTask {
 
     this.eventCollectorUrl = new GenericUrl();
     this.eventCollectorUrl.setRawPath("/services/collector/event");
-    this.eventCollectorUrl.setPort(this.config.splunkPort());
-    this.eventCollectorUrl.setHost(this.config.splunkHost());
+    this.eventCollectorUrl.setPort(this.config.splunkPort);
+    this.eventCollectorUrl.setHost(this.config.splunkHost);
 
-    if (this.config.ssl()) {
+    if (this.config.ssl) {
       this.eventCollectorUrl.setScheme("https");
     } else {
       this.eventCollectorUrl.setScheme("http");
     }
 
-    if (log.isInfoEnabled()) {
-      log.info("Setting Splunk Http Event Collector Url to {}", this.eventCollectorUrl);
-    }
+    log.info("Setting Splunk Http Event Collector Url to {}", this.eventCollectorUrl);
   }
 
 
   @Override
   public void put(Collection<SinkRecord> collection) {
     if (collection.isEmpty()) {
-      if (log.isDebugEnabled()) {
-        log.debug("No records in collection.");
-      }
+      log.trace("No records in collection.");
       return;
     }
 
     try {
-      if (log.isDebugEnabled()) {
-        log.debug("Posting {} message(s) to {}", collection.size(), this.eventCollectorUrl);
-      }
+      log.trace("Posting {} message(s) to {}", collection.size(), this.eventCollectorUrl);
 
       SinkRecordContent sinkRecordContent = new SinkRecordContent(collection);
 
-      if (log.isDebugEnabled()) {
+      if (log.isTraceEnabled()) {
         try (ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
           sinkRecordContent.writeTo(outputStream);
           outputStream.flush();
           byte[] buffer = outputStream.toByteArray();
-          log.debug("Posting\n{}", new String(buffer, "UTF-8"));
+          log.trace("Posting\n{}", new String(buffer, "UTF-8"));
         } catch (IOException ex) {
-          if (log.isDebugEnabled()) {
-            log.debug("exception thrown while previewing post", ex);
+          if (log.isTraceEnabled()) {
+            log.trace("exception thrown while previewing post", ex);
           }
         }
       }
@@ -178,12 +167,10 @@ public class SplunkHttpSinkTask extends SinkTask {
       }
 
       if (httpResponse.getStatusCode() == 417) {
-        if (log.isWarnEnabled()) {
-          log.warn("This exception happens when too much content is pushed to splunk per call. Look at this blog post " +
-              "http://blogs.splunk.com/2016/08/12/handling-http-event-collector-hec-content-length-too-large-errors-without-pulling-your-hair-out/" +
-              " Setting consumer.max.poll.records to a lower value will decrease the number of message posted to Splunk " +
-              "at once.");
-        }
+        log.warn("This exception happens when too much content is pushed to splunk per call. Look at this blog post " +
+            "http://blogs.splunk.com/2016/08/12/handling-http-event-collector-hec-content-length-too-large-errors-without-pulling-your-hair-out/" +
+            " Setting consumer.max.poll.records to a lower value will decrease the number of message posted to Splunk " +
+            "at once.");
         throw new ConnectException("Status 417: Content-Length of XXXXX too large (maximum is 1000000). Verify Splunk config or " +
             " lower the value in consumer.max.poll.records.");
       }
@@ -212,8 +199,6 @@ public class SplunkHttpSinkTask extends SinkTask {
 
   @Override
   public void stop() {
-    if (log.isInfoEnabled()) {
-      log.info("Stopping...");
-    }
+    log.info("Stopping...");
   }
 }

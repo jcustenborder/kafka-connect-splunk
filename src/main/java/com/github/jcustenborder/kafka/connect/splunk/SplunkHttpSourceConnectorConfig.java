@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -59,13 +59,31 @@ public class SplunkHttpSourceConnectorConfig extends AbstractConfig {
   private static final String BATCH_SIZE_DOC = "Maximum number of records to write per poll call.";
   private static final String BACKOFF_MS_DOC = "The number of milliseconds to back off when there are no records in the" +
       "queue.";
-
-  public SplunkHttpSourceConnectorConfig(ConfigDef config, Map<String, String> parsedConfig) {
-    super(config, parsedConfig);
-  }
-
+  public final int port;
+  public final String keyStorePath;
+  public final String keyStorePassword;
+  public final boolean sslRenegotiationAllowed;
+  public final String eventCollectorUrl;
+  public final Set<String> allowedIndexes;
+  public final String defaultIndex;
+  public final boolean topicPerIndex;
+  public final String topicPrefix;
+  public final int batchSize;
+  public final int backoffMS;
   public SplunkHttpSourceConnectorConfig(Map<String, String> parsedConfig) {
-    this(conf(), parsedConfig);
+    super(conf(), parsedConfig);
+
+    this.port = this.getInt(PORT_CONF);
+    this.keyStorePath = this.getString(KEYSTORE_PATH_CONF);
+    this.keyStorePassword = this.getPassword(KEYSTORE_PASSWORD_CONF).value();
+    this.sslRenegotiationAllowed = this.getBoolean(SSL_RENEGOTIATION_ALLOWED_CONF);
+    this.eventCollectorUrl = this.getString(EVENT_COLLECTOR_URL_CONF);
+    this.allowedIndexes = new HashSet<>(this.getList(EVENT_COLLECTOR_INDEX_ALLOWED_CONF));
+    this.defaultIndex = this.getString(EVENT_COLLECTOR_INDEX_DEFAULT_CONF);
+    this.topicPerIndex = this.getBoolean(TOPIC_PER_INDEX_CONF);
+    this.topicPrefix = this.getString(TOPIC_PREFIX_CONF);
+    this.batchSize = this.getInt(BATCH_SIZE_CONF);
+    this.backoffMS = this.getInt(BACKOFF_MS_CONF);
   }
 
   public static ConfigDef conf() {
@@ -83,56 +101,11 @@ public class SplunkHttpSourceConnectorConfig extends AbstractConfig {
         .define(BACKOFF_MS_CONF, Type.INT, 100, Importance.LOW, BACKOFF_MS_DOC);
   }
 
-  public int port() {
-    return this.getInt(PORT_CONF);
-  }
-
-  public String keyStorePath() {
-    return this.getString(KEYSTORE_PATH_CONF);
-  }
-
-  public String keyStorePassword() {
-    return this.getPassword(KEYSTORE_PASSWORD_CONF).value();
-  }
-
-  public boolean sslRenegotiationAllowed() {
-    return this.getBoolean(SSL_RENEGOTIATION_ALLOWED_CONF);
-  }
-
-  public String eventCollectorUrl() {
-    return this.getString(EVENT_COLLECTOR_URL_CONF);
-  }
-
   public SslContextFactory sslContextFactory() {
     SslContextFactory sslContextFactory = new SslContextFactory();
-    sslContextFactory.setKeyStorePath(keyStorePath());
-    sslContextFactory.setKeyStorePassword(keyStorePassword());
-    sslContextFactory.setRenegotiationAllowed(sslRenegotiationAllowed());
+    sslContextFactory.setKeyStorePath(this.keyStorePath);
+    sslContextFactory.setKeyStorePassword(this.keyStorePassword);
+    sslContextFactory.setRenegotiationAllowed(this.sslRenegotiationAllowed);
     return sslContextFactory;
   }
-
-  public Set<String> allowedIndexes() {
-    return new HashSet<>(this.getList(EVENT_COLLECTOR_INDEX_ALLOWED_CONF));
-  }
-
-  public String defaultIndex() {
-    return this.getString(EVENT_COLLECTOR_INDEX_DEFAULT_CONF);
-  }
-
-  public boolean topicPerIndex() {
-    return this.getBoolean(TOPIC_PER_INDEX_CONF);
-  }
-
-  public String topicPrefix() {
-    return this.getString(TOPIC_PREFIX_CONF);
-  }
-
-  public int batchSize() {
-    return this.getInt(BATCH_SIZE_CONF);
-  }
-
-  public int backoffMS() {
-    return this.getInt(BACKOFF_MS_CONF);
-  }
-
 }
