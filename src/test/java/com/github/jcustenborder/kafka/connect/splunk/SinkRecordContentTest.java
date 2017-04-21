@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -34,6 +34,25 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class SinkRecordContentTest {
   private static final Logger log = LoggerFactory.getLogger(SinkRecordContentTest.class);
+
+  public static void addRecord(Collection<SinkRecord> records, Map<String, ?> values) {
+    Struct valueStruct = new Struct(EventConverter.VALUE_SCHEMA);
+    for (Map.Entry<String, ?> entry : values.entrySet()) {
+      valueStruct.put(entry.getKey(), entry.getValue());
+    }
+
+    records.add(
+        new SinkRecord(
+            "topic",
+            1,
+            EventConverter.KEY_SCHEMA,
+            null,
+            EventConverter.VALUE_SCHEMA,
+            valueStruct,
+            1L
+        )
+    );
+  }
 
   SinkRecord record(Object value) {
     return record(null, value);
@@ -129,24 +148,5 @@ public class SinkRecordContentTest {
 
     final String expected = "{\"event\":12341233}";
     test(record, expected);
-  }
-
-  public static void addRecord(Collection<SinkRecord> records, Map<String, ?> values) {
-    Struct valueStruct = new Struct(EventConverter.VALUE_SCHEMA);
-    for (Map.Entry<String, ?> entry : values.entrySet()) {
-      valueStruct.put(entry.getKey(), entry.getValue());
-    }
-
-    records.add(
-        new SinkRecord(
-            "topic",
-            1,
-            EventConverter.KEY_SCHEMA,
-            null,
-            EventConverter.VALUE_SCHEMA,
-            valueStruct,
-            1L
-        )
-    );
   }
 }

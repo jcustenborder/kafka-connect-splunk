@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -15,6 +15,8 @@
  */
 package com.github.jcustenborder.kafka.connect.splunk;
 
+import com.github.jcustenborder.kafka.connect.utils.VersionUtil;
+import com.github.jcustenborder.kafka.connect.utils.config.Description;
 import org.apache.kafka.common.config.ConfigDef;
 import org.apache.kafka.connect.connector.Task;
 import org.apache.kafka.connect.source.SourceConnector;
@@ -23,13 +25,17 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+@Description("The Splunk Source connector allows emulates a [Splunk Http Event Collector](http://dev.splunk.com/view/event-collector/SP-CAAAE6M) to allow " +
+    "application that normally log to Splunk to instead write to Kafka. The goal of this plugin is to make the change nearly " +
+    "transparent to the user. This plugin currently has support for [X-Forwarded-For](https://en.wikipedia.org/wiki/X-Forwarded-For) so " +
+    "it will sit behind a load balancer nicely.")
 public class SplunkHttpSourceConnector extends SourceConnector {
   Map<String, String> settings;
   private SplunkHttpSourceConnectorConfig config;
 
   @Override
   public String version() {
-    return VersionUtil.getVersion();
+    return VersionUtil.version(this.getClass());
   }
 
   @Override

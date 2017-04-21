@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -15,6 +15,8 @@
  */
 package com.github.jcustenborder.kafka.connect.splunk;
 
+import com.github.jcustenborder.kafka.connect.utils.VersionUtil;
+import com.github.jcustenborder.kafka.connect.utils.config.Description;
 import org.apache.kafka.common.config.ConfigDef;
 import org.apache.kafka.connect.connector.Task;
 import org.apache.kafka.connect.sink.SinkConnector;
@@ -25,6 +27,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+@Description("The Sink Connector will transform data from a Kafka topic into a batch of json messages that will be written via HTTP to " +
+    "a configured [Splunk Http Event Collector](http://dev.splunk.com/view/event-collector/SP-CAAAE6M).")
 public class SplunkHttpSinkConnector extends SinkConnector {
   private static Logger log = LoggerFactory.getLogger(SplunkHttpSinkConnector.class);
   Map<String, String> settings;
@@ -32,7 +36,7 @@ public class SplunkHttpSinkConnector extends SinkConnector {
 
   @Override
   public String version() {
-    return VersionUtil.getVersion();
+    return VersionUtil.version(this.getClass());
   }
 
   @Override

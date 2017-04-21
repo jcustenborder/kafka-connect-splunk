@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -15,6 +15,7 @@
  */
 package com.github.jcustenborder.kafka.connect.splunk;
 
+import com.google.common.base.Strings;
 import org.apache.kafka.common.config.AbstractConfig;
 import org.apache.kafka.common.config.ConfigDef;
 import org.apache.kafka.common.config.ConfigDef.Importance;
@@ -49,13 +50,31 @@ public class SplunkHttpSinkConnectorConfig extends AbstractConfig {
       "or 0 for an infinite timeout.";
   static final String CURL_LOGGING_ENABLED_DOC = "Flag to determine if requests to Splunk should be logged in curl form." +
       " This will output a curl command to replicate the call to Splunk.";
-
-  public SplunkHttpSinkConnectorConfig(ConfigDef config, Map<String, String> parsedConfig) {
-    super(config, parsedConfig);
-  }
-
+  public final String authToken;
+  public final int splunkPort;
+  public final String splunkHost;
+  public final boolean ssl;
+  public final boolean validateCertificates;
+  public final String trustStorePath;
+  public final boolean hasTrustStorePath;
+  public final String trustStorePassword;
+  public final int connectTimeout;
+  public final int readTimeout;
+  public final boolean curlLoggingEnabled;
   public SplunkHttpSinkConnectorConfig(Map<String, String> parsedConfig) {
-    this(conf(), parsedConfig);
+    super(conf(), parsedConfig);
+    this.authToken = this.getPassword(AUTHORIZATION_TOKEN_CONF).value();
+    this.splunkPort = this.getInt(REMOTE_PORT_CONF);
+    this.splunkHost = this.getString(REMOTE_HOST_CONF);
+    this.ssl = this.getBoolean(SSL_CONF);
+    this.validateCertificates = this.getBoolean(SSL_VALIDATE_CERTIFICATES_CONF);
+    this.trustStorePath = this.getString(SSL_TRUSTSTORE_PATH_CONF);
+    this.hasTrustStorePath = !Strings.isNullOrEmpty(this.trustStorePath);
+    this.trustStorePassword = this.getPassword(SSL_TRUSTSTORE_PASSWORD_CONF).toString();
+    this.connectTimeout = this.getInt(CONNECT_TIMEOUT_CONF);
+    this.readTimeout = this.getInt(READ_TIMEOUT_CONF);
+    this.curlLoggingEnabled = this.getBoolean(CURL_LOGGING_ENABLED_CONF);
+
   }
 
   public static ConfigDef conf() {
@@ -71,50 +90,4 @@ public class SplunkHttpSinkConnectorConfig extends AbstractConfig {
         .define(READ_TIMEOUT_CONF, Type.INT, 30000, Importance.LOW, READ_TIMEOUT_DOC)
         .define(CURL_LOGGING_ENABLED_CONF, Type.BOOLEAN, false, Importance.LOW, CURL_LOGGING_ENABLED_DOC);
   }
-
-  public String authToken() {
-    return this.getPassword(AUTHORIZATION_TOKEN_CONF).value();
-  }
-
-
-  public int splunkPort() {
-    return this.getInt(REMOTE_PORT_CONF);
-  }
-
-  public String splunkHost() {
-    return this.getString(REMOTE_HOST_CONF);
-  }
-
-  public boolean ssl() {
-    return this.getBoolean(SSL_CONF);
-  }
-
-  public boolean validateCertificates() {
-    return this.getBoolean(SSL_VALIDATE_CERTIFICATES_CONF);
-  }
-
-  public String trustStorePath() {
-    return this.getString(SSL_TRUSTSTORE_PATH_CONF);
-  }
-
-  public boolean hasTrustStorePath() {
-    return null != trustStorePath() && !trustStorePath().isEmpty();
-  }
-
-  public String trustStorePassword() {
-    return this.getPassword(SSL_TRUSTSTORE_PASSWORD_CONF).toString();
-  }
-
-  public int connectTimeout() {
-    return this.getInt(CONNECT_TIMEOUT_CONF);
-  }
-
-  public int readTimeout() {
-    return this.getInt(READ_TIMEOUT_CONF);
-  }
-
-  public boolean curlLoggingEnabled() {
-    return this.getBoolean(CURL_LOGGING_ENABLED_CONF);
-  }
-
 }
