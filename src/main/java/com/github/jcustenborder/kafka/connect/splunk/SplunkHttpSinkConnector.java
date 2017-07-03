@@ -28,7 +28,7 @@ import java.util.List;
 import java.util.Map;
 
 @Description("The Sink Connector will transform data from a Kafka topic into a batch of json messages that will be written via HTTP to " +
-    "a configured `Splunk Http Event Collector` <http://dev.splunk.com/view/event-collector/SP-CAAAE6M>`.")
+    "a configured `Splunk Http Event Collector <http://dev.splunk.com/view/event-collector/SP-CAAAE6M>`_.")
 public class SplunkHttpSinkConnector extends SinkConnector {
   private static Logger log = LoggerFactory.getLogger(SplunkHttpSinkConnector.class);
   Map<String, String> settings;
