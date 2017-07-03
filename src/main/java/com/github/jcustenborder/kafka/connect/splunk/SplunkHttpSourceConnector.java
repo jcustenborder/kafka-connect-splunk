@@ -17,6 +17,7 @@ package com.github.jcustenborder.kafka.connect.splunk;
 
 import com.github.jcustenborder.kafka.connect.utils.VersionUtil;
 import com.github.jcustenborder.kafka.connect.utils.config.Description;
+import com.github.jcustenborder.kafka.connect.utils.config.DocumentationImportant;
 import org.apache.kafka.common.config.ConfigDef;
 import org.apache.kafka.connect.connector.Task;
 import org.apache.kafka.connect.source.SourceConnector;
@@ -25,10 +26,13 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-@Description("The Splunk Source connector allows emulates a [Splunk Http Event Collector](http://dev.splunk.com/view/event-collector/SP-CAAAE6M) to allow " +
+@Description("The Splunk Source connector allows emulates a `Splunk Http Event Collector` <http://dev.splunk.com/view/event-collector/SP-CAAAE6M> to allow " +
     "application that normally log to Splunk to instead write to Kafka. The goal of this plugin is to make the change nearly " +
-    "transparent to the user. This plugin currently has support for [X-Forwarded-For](https://en.wikipedia.org/wiki/X-Forwarded-For) so " +
+    "transparent to the user. This plugin currently has support for `X-Forwarded-For <https://en.wikipedia.org/wiki/X-Forwarded-For>` so " +
     "it will sit behind a load balancer nicely.")
+@DocumentationImportant("This connector listens on a network port. Running more than one task or running in distributed " +
+    "mode can cause some undesired effects if another task already has the port open. It is recommended that you run this " +
+    "connector in :term:`Standalone Mode`.")
 public class SplunkHttpSourceConnector extends SourceConnector {
   Map<String, String> settings;
   private SplunkHttpSourceConnectorConfig config;
