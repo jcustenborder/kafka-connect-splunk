@@ -24,15 +24,6 @@ that can be used to write data to a Splunk HEC endpoint.
 
 
 .. toctree::
-    :maxdepth: 1
-    :caption: Transformations:
-    :hidden:
-    :glob:
-
-    transformations/*
-
-
-.. toctree::
     :maxdepth: 0
     :caption: Schemas:
     :hidden:
