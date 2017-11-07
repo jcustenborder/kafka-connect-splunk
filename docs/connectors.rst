@@ -29,5 +29,4 @@ that can be used to write data to a Splunk HEC endpoint.
     :hidden:
 
     schemas
-
-
+    info
